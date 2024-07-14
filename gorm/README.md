@@ -1,5 +1,5 @@
 Getting started
 ```shell
 go mod tidy
-go run ./... --help
+go run . --help
 ```

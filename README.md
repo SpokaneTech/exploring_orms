@@ -22,7 +22,7 @@ We'll cover three main ideas:
 
 ## Why use an ORM?
 
-- Strongly typed interaction with your database
+- Typed interaction with your database
 - Speed up development time
 - Prevent SQL-injection
 - Auto migrations
