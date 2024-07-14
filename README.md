@@ -43,7 +43,24 @@ We'll cover three main ideas:
 
 ## Demo — Cars
 
+- has one: ...
+- has many: vehicle and manufacturer
+- many to many: vehicle and parts
+- polymorphism: gas and electric vehicles
+- single-table inheritance
+
+---
+
+## Has many
 ![](./docs/mermaid-1-simple.svg)
+
+---
+
+## Many to Many
+
+- When using GORM AutoMigrate, GORM will create the join table automatically
+
+![](./docs/mermaid-2-parts.svg)
 
 ---
 
