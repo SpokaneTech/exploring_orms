@@ -21,6 +21,7 @@ type Vehicle struct {
 	gorm.Model
 	Name           string
 	ManufacturerID uint
+	Manufacturer   Manufacturer
 	Parts          []*Part `gorm:"many2many:vehicle_parts;"`
 }
 
@@ -48,7 +49,7 @@ func NewCli(db *gorm.DB) *cli.App {
 		Usage: "Manage your garage",
 		Action: func(*cli.Context) error {
 			vehicles := []Vehicle{}
-			result := db.Find(&vehicles)
+			result := db.Preload("Manufacturer").Find(&vehicles)
 			if result.Error != nil {
 				return result.Error
 			}
@@ -56,7 +57,7 @@ func NewCli(db *gorm.DB) *cli.App {
 				fmt.Println("No vehicles found in your garage")
 			}
 			for _, vehicle := range vehicles {
-				fmt.Printf("%v\n", vehicle.Name)
+				fmt.Printf("%v %v\n", vehicle.Manufacturer.Name, vehicle.Name)
 			}
 			return nil
 		},
@@ -87,7 +88,7 @@ func NewCli(db *gorm.DB) *cli.App {
 						db.Save(manufacturer)
 					}
 
-					vehicle := &Vehicle{Name: vehicleName}
+					vehicle := &Vehicle{Name: vehicleName, Manufacturer: *manufacturer}
 					result := db.Save(vehicle)
 					if result.Error != nil {
 						return result.Error
