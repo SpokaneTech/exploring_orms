@@ -70,7 +70,7 @@ We'll cover three main ideas:
 
 ## Has one
 
-- Assume one driver to one vehicle
+- A vehicle has one driver
 
 ![](./docs/mermaid-3-drivers.svg)
 

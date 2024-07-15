@@ -4,17 +4,16 @@ go mod tidy
 go run . --help
 ```
 
-
 Add a new vehicle to your garage
 ```shell
-$ go run . add --manufacturer Mitsubishi --name 'Montero Sport'
+$ go run . add --manufacturer Mitsubishi --model 'Montero Sport'
 Added a Mitsubishi Montero Sport to your gararge
 ```
 
 List the vehicles in your garage
 ```shell
 $ go run .
-Mitsubishi Montero Sport
+(1) Mitsubishi Montero Sport
 ```
 
 Add a new vehicle part to your garage
@@ -27,4 +26,9 @@ List the vehicle parts in your gararge
 ```shell
 $ go run . list-parts
 Muffler ($399.99)
+```
+
+Update GORM Gen
+```shell
+$ go run cmd/generate/main.go
 ```

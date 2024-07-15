@@ -6,57 +6,19 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/SpokaneTech/exploring_orms/internal/query"
+	"github.com/SpokaneTech/exploring_orms/pkg/models"
 	"github.com/shopspring/decimal"
 	"github.com/urfave/cli/v2"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-// A vehicle manufacturer, like Chevrolet
-type Manufacturer struct {
-	gorm.Model
-	Name     string
-	Vehicles []Model
-}
-
-// A vehicle model, like a Chevrolet Silverado
-type Model struct {
-	gorm.Model
-	Name           string
-	ManufacturerID uint
-	Manufacturer   *Manufacturer
-	Parts          []*Part `gorm:"many2many:vehicle_parts;"`
-}
-
-// An individual of a model, like Joe's Chevrolet Silverado
-type Vehicle struct {
-	gorm.Model
-	Vin            string
-	VehicleModelID uint
-	VehicleModel   Model
-	PersonID       *int
-	Person         *Person
-}
-
-// A vehicle part for one or more models, like a muffler for all Chevrolet pickups
-type Part struct {
-	gorm.Model
-	Name   string
-	Cost   decimal.Decimal `gorm:"type:decimal(7,2);"`
-	Models []*Model        `gorm:"many2many:model_parts;"`
-}
-
-// A person, who may drive a vehicle
-type Person struct {
-	gorm.Model
-	Name string
-}
-
 var (
 	RecordNotFound string = "record not found"
 )
 
-func NewCli(db *gorm.DB) *cli.App {
+func NewCli(query *query.Query) *cli.App {
 	var (
 		manufacturerName string
 		modelName        string
@@ -71,16 +33,24 @@ func NewCli(db *gorm.DB) *cli.App {
 		Name:  "garage",
 		Usage: "Manage your garage",
 		Action: func(*cli.Context) error {
-			vehicles := []Model{}
-			result := db.Preload("Manufacturer").Find(&vehicles)
-			if result.Error != nil {
-				return result.Error
+			var vehicles []*models.Vehicle
+			var err error
+			if vehicles, err = query.Vehicle.
+				Joins(query.Vehicle.VehicleModel).
+				Joins(query.Vehicle.VehicleModel.Manufacturer).
+				Find(); err != nil {
+				return err
 			}
 			if len(vehicles) == 0 {
 				fmt.Println("No vehicles found in your garage")
 			}
 			for _, vehicle := range vehicles {
-				fmt.Printf("(%v) %v %v\n", vehicle.ID, vehicle.Manufacturer.Name, vehicle.Name)
+				fmt.Printf(
+					"(%v) %v %v\n",
+					vehicle.ID,
+					vehicle.VehicleModel.Manufacturer.Name,
+					vehicle.VehicleModel.Name,
+				)
 			}
 			return nil
 		},
@@ -105,30 +75,32 @@ func NewCli(db *gorm.DB) *cli.App {
 					},
 				},
 				Action: func(ctx *cli.Context) error {
-					manufacturer := &Manufacturer{Name: manufacturerName}
-					if result := db.Where("name = ?", manufacturerName).First(&manufacturer); result.Error != nil {
-						if result.Error.Error() != RecordNotFound {
-							return result.Error
-						}
-						if result = db.Save(manufacturer); result.Error != nil {
-							return result.Error
-						}
-					}
-
-					model := &Model{Name: modelName, Manufacturer: manufacturer}
-					if result := db.Where("name = ?", modelName).First(&model); result.Error != nil {
-						if result.Error.Error() != RecordNotFound {
-							return result.Error
-						}
-						if result = db.Save(model); result.Error != nil {
-							return result.Error
+					var manufacturer *models.Manufacturer
+					var err error
+					if manufacturer, err = query.Manufacturer.
+						Where(query.Manufacturer.Name.Eq(manufacturerName)).
+						Attrs(query.Manufacturer.Name.Value(manufacturerName)).
+						FirstOrCreate(); err != nil {
+						if err.Error() != RecordNotFound {
+							return err
 						}
 					}
 
-					vehicle := &Vehicle{Vin: vehicleVin, VehicleModel: *model}
-					if result := db.Save(vehicle); result.Error != nil {
-						return result.Error
+					var model *models.Model
+					if model, err = query.Model.
+						Where(query.Model.Name.Eq(modelName)).
+						Attrs(query.Model.Name.Value(modelName)).
+						FirstOrCreate(); err != nil {
+						if err.Error() != RecordNotFound {
+							return err
+						}
 					}
+
+					vehicle := &models.Vehicle{Vin: vehicleVin, VehicleModel: *model}
+					if err := query.Vehicle.Save(vehicle); err != nil {
+						return err
+					}
+
 					fmt.Printf("Added a %v %v to your garage with the VIN %v\n", manufacturer.Name, model.Name, vehicle.Vin)
 					return nil
 				},
@@ -154,11 +126,12 @@ func NewCli(db *gorm.DB) *cli.App {
 					if err != nil {
 						return err
 					}
-					part := &Part{Name: partName, Cost: partCost}
-					result := db.Save(part)
-					if result.Error != nil {
-						return result.Error
+
+					part := &models.Part{Name: partName, Cost: partCost}
+					if err := query.Part.Save(part); err != nil {
+						return err
 					}
+
 					fmt.Printf("Added a new part %v to your garage\n", part.Name)
 					return nil
 				},
@@ -166,10 +139,9 @@ func NewCli(db *gorm.DB) *cli.App {
 			{
 				Name: "list-parts",
 				Action: func(*cli.Context) error {
-					parts := []Part{}
-					result := db.Find(&parts)
-					if result.Error != nil {
-						return result.Error
+					parts, err := query.Part.Find()
+					if err != nil {
+						return err
 					}
 					if len(parts) == 0 {
 						fmt.Println("No parts found in your garage")
@@ -200,22 +172,29 @@ func NewCli(db *gorm.DB) *cli.App {
 					if err != nil {
 						return fmt.Errorf("could not parse vehicle ID from %v", vehicleIDStr)
 					}
-					vehicle := &Vehicle{}
-					if result := db.
-						Joins("VehicleModel").
-						Joins("VehicleModel.Manufacturer").
-						First(vehicle, vehicleID); result.Error != nil {
-						return result.Error
-					}
 
-					person := &Person{Name: personName}
-					if err := createOrUpdate(db, person, db.Where("name = ?", modelName)); err != nil {
+					var vehicle *models.Vehicle
+					if vehicle, err = query.Vehicle.
+						Joins(query.Vehicle.VehicleModel).
+						Joins(query.Vehicle.VehicleModel.Manufacturer).
+						Where(query.Vehicle.ID.Eq(uint(vehicleID))).
+						First(); err != nil {
 						return err
 					}
-					vehicle.Person = person
-					if result := db.Save(vehicle); result.Error != nil {
-						return result.Error
+
+					var person *models.Person
+					if person, err = query.Person.
+						Where(query.Person.Name.Eq(personName)).
+						Attrs(query.Person.Name.Value(personName)).
+						FirstOrCreate(); err != nil {
+						return err
 					}
+
+					vehicle.Person = person
+					if err := query.Vehicle.Save(vehicle); err != nil {
+						return err
+					}
+
 					fmt.Printf(
 						"Added a %v as the owner of (%v) %v %v\n",
 						person.Name,
@@ -239,27 +218,17 @@ func main() {
 
 	// Migrate the schema
 	db.AutoMigrate(
-		&Manufacturer{},
-		&Model{},
-		&Vehicle{},
-		&Part{},
-		&Person{},
+		&models.Manufacturer{},
+		&models.Model{},
+		&models.Vehicle{},
+		&models.Part{},
+		&models.Person{},
 	)
 
-	cli := NewCli(db)
+	query := query.Use(db)
+
+	cli := NewCli(query)
 	if err := cli.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func createOrUpdate(db *gorm.DB, dest interface{}, query interface{}) error {
-	if result := db.Where(query).First(&dest); result.Error != nil {
-		if result.Error.Error() != RecordNotFound {
-			return result.Error
-		}
-		if result = db.Save(dest); result.Error != nil {
-			return result.Error
-		}
-	}
-	return nil
 }
