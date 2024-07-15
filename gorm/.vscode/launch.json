@@ -5,13 +5,39 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "debug",
+      "name": "add vehicle",
       "type": "go",
       "request": "launch",
       "mode": "debug",
       "program": ".",
-      "args": [],
-      "cwd": "orm"
+      "args": [
+        "add",
+        "--manufacturer",
+        "Mitsubishi",
+        "--model",
+        "Montero Sport",
+      ]
+    },
+    {
+      "name": "add driver",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": ".",
+      "args": [
+        "add-driver",
+        "--vehicle_id",
+        "${input:vehicleId}",
+        "--name",
+        "Joe",
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "vehicleId",
+      "description": "Please enter a vehicle ID",
+      "type": "promptString"
     }
   ]
 }

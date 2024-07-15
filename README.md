@@ -33,7 +33,7 @@ We'll cover three main ideas:
 
 ## Relationships
 
-- has one
+- has one / belongs to
 - has many
 - many to many
 - polymorphism
@@ -43,9 +43,13 @@ We'll cover three main ideas:
 
 ## Demo — Cars
 
-- has one: ...
-- has many: vehicle and manufacturer
-- many to many: vehicle and parts
+- has one
+    - vehicle and driver
+- has many
+    - vehicle and model
+    - model and manufacturer
+- many to many
+    - model and parts
 - polymorphism: gas and electric vehicles
 - single-table inheritance
 
@@ -58,9 +62,21 @@ We'll cover three main ideas:
 
 ## Many to Many
 
-- When using GORM AutoMigrate, GORM will create the join table automatically
+- When using GORM AutoMigrate, GORM will create join tables automatically
 
 ![](./docs/mermaid-2-parts.svg)
+
+---
+
+## Has one
+
+- Assume one driver to one vehicle
+
+![](./docs/mermaid-3-drivers.svg)
+
+---
+
+## Repository pattern
 
 ---
 
