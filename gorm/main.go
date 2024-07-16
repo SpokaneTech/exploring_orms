@@ -90,6 +90,7 @@ func NewCli(query *query.Query) *cli.App {
 					if model, err = query.Model.
 						Where(query.Model.Name.Eq(modelName)).
 						Attrs(query.Model.Name.Value(modelName)).
+						Attrs(query.Model.ManufacturerID.Value(manufacturer.ID)).
 						FirstOrCreate(); err != nil {
 						if err.Error() != RecordNotFound {
 							return err
