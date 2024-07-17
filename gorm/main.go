@@ -18,7 +18,7 @@ var (
 	RecordNotFound string = "record not found"
 )
 
-func NewCli(query *query.Query) *cli.App {
+func NewCli(q *query.Query) *cli.App {
 	var (
 		manufacturerName string
 		modelName        string
@@ -35,9 +35,9 @@ func NewCli(query *query.Query) *cli.App {
 		Action: func(*cli.Context) error {
 			var vehicles []*models.Vehicle
 			var err error
-			if vehicles, err = query.Vehicle.
-				Joins(query.Vehicle.VehicleModel).
-				Joins(query.Vehicle.VehicleModel.Manufacturer).
+			if vehicles, err = q.Vehicle.
+				Joins(q.Vehicle.VehicleModel).
+				Joins(q.Vehicle.VehicleModel.Manufacturer).
 				Find(); err != nil {
 				return err
 			}
@@ -77,9 +77,9 @@ func NewCli(query *query.Query) *cli.App {
 				Action: func(ctx *cli.Context) error {
 					var manufacturer *models.Manufacturer
 					var err error
-					if manufacturer, err = query.Manufacturer.
-						Where(query.Manufacturer.Name.Eq(manufacturerName)).
-						Attrs(query.Manufacturer.Name.Value(manufacturerName)).
+					if manufacturer, err = q.Manufacturer.
+						Where(q.Manufacturer.Name.Eq(manufacturerName)).
+						Attrs(q.Manufacturer.Name.Value(manufacturerName)).
 						FirstOrCreate(); err != nil {
 						if err.Error() != RecordNotFound {
 							return err
@@ -87,10 +87,10 @@ func NewCli(query *query.Query) *cli.App {
 					}
 
 					var model *models.Model
-					if model, err = query.Model.
-						Where(query.Model.Name.Eq(modelName)).
-						Attrs(query.Model.Name.Value(modelName)).
-						Attrs(query.Model.ManufacturerID.Value(manufacturer.ID)).
+					if model, err = q.Model.
+						Where(q.Model.Name.Eq(modelName)).
+						Attrs(q.Model.Name.Value(modelName)).
+						Attrs(q.Model.ManufacturerID.Value(manufacturer.ID)).
 						FirstOrCreate(); err != nil {
 						if err.Error() != RecordNotFound {
 							return err
@@ -98,7 +98,7 @@ func NewCli(query *query.Query) *cli.App {
 					}
 
 					vehicle := &models.Vehicle{Vin: vehicleVin, VehicleModel: *model}
-					if err := query.Vehicle.Save(vehicle); err != nil {
+					if err := q.Vehicle.Save(vehicle); err != nil {
 						return err
 					}
 
@@ -129,7 +129,7 @@ func NewCli(query *query.Query) *cli.App {
 					}
 
 					part := &models.Part{Name: partName, Cost: partCost}
-					if err := query.Part.Save(part); err != nil {
+					if err := q.Part.Save(part); err != nil {
 						return err
 					}
 
@@ -140,7 +140,7 @@ func NewCli(query *query.Query) *cli.App {
 			{
 				Name: "list-parts",
 				Action: func(*cli.Context) error {
-					parts, err := query.Part.Find()
+					parts, err := q.Part.Find()
 					if err != nil {
 						return err
 					}
@@ -175,24 +175,26 @@ func NewCli(query *query.Query) *cli.App {
 					}
 
 					var vehicle *models.Vehicle
-					if vehicle, err = query.Vehicle.
-						Joins(query.Vehicle.VehicleModel).
-						Joins(query.Vehicle.VehicleModel.Manufacturer).
-						Where(query.Vehicle.ID.Eq(uint(vehicleID))).
+					if vehicle, err = q.Vehicle.
+						Joins(q.Vehicle.VehicleModel).
+						Joins(q.Vehicle.VehicleModel.Manufacturer).
+						Where(q.Vehicle.ID.Eq(uint(vehicleID))).
 						First(); err != nil {
 						return err
 					}
 
 					var person *models.Person
-					if person, err = query.Person.
-						Where(query.Person.Name.Eq(personName)).
-						Attrs(query.Person.Name.Value(personName)).
+					if person, err = q.Person.
+						Where(q.Person.Name.Eq(personName)).
+						Attrs(q.Person.Name.Value(personName)).
 						FirstOrCreate(); err != nil {
 						return err
 					}
 
+					q.Person.Limit(10)
+
 					vehicle.Person = person
-					if err := query.Vehicle.Save(vehicle); err != nil {
+					if err := q.Vehicle.Save(vehicle); err != nil {
 						return err
 					}
 

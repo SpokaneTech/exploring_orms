@@ -1,3 +1,24 @@
+---
+marp: true
+theme: gaia
+style: |
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  section.small {
+    font-size: 22px;
+  }
+---
+
+## Exploring GORM: The Fantastic ORM for Go
+
+and the Django ORM for all you Pythonistas
+
+---
+
+## Agenda
 
 We'll cover three main ideas:
 
@@ -56,23 +77,67 @@ We'll cover three main ideas:
 ---
 
 ## Has many
-![](./docs/mermaid-1-simple.svg)
+
+<div class="columns">
+<div>
+
+- A `manufacturer` has many `vehicles`
+
+</div>
+<div>
+
+![width:600px](./docs/mermaid-1-simple.png)
+
+</div>
+</div>
 
 ---
 
-## Many to Many
+## Many to many
 
+<div class="columns">
+<div>
+
+- A `part` can fit many `vehicles` and a `vehicle` can have many `parts`
 - When using GORM AutoMigrate, GORM will create join tables automatically
 
-![](./docs/mermaid-2-parts.svg)
+</div>
+<div>
+
+![width:600px](./docs/mermaid-2-parts.png)
+
+</div>
+</div>
 
 ---
 
 ## Has one
 
-- A vehicle has one driver
+<div class="columns">
+<div>
 
-![](./docs/mermaid-3-drivers.svg)
+- A `vehicle` has one driver, a `person`
+
+</div>
+<div>
+
+![width:600px](./docs/mermaid-3-drivers.png)
+
+</div>
+</div>
+
+---
+
+<!-- _class: small -->
+
+## SQL vs. GORM vs. Django ORM functions
+
+| SQL | GORM | GORM Gen | Django |
+| --- | --- | --- | --- |
+| SELECT * | `db.Select()` | `q.Person.Select()` | `queryset.all()` |
+| SELECT name | `db.Select("name")` | `q.Person.Select(q.Person.Name)` | `queryset.values("name")` |
+| WHERE name = 'Joe' | `db.Where("name=?","Joe")` | `q.Person.Where( q.Person.Name.Eq("Joe"))` | `queryset.filter(name="Joe")` |
+| LIMIT | `.Limit(10)` | `q.Person.Limit(10)` | `qs[:10]` |
 
 ---
 
