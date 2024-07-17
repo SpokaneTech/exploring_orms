@@ -48,7 +48,7 @@ We'll cover three main ideas:
 - Prevent SQL-injection
 - Auto migrations
 - ➖ Higher level abstraction
-- ➖ Can lead to poor performance (N+1)
+- ➖ Can lead to poor performance (N+1, etc.)
 
 ---
 
